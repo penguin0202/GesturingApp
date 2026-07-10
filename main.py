@@ -7,6 +7,7 @@ import pprint
 from signs import *
 import numpy as np
 from camera import *
+from hand_detector import *
 
 WIDTH = 600
 HEIGHT = 500
@@ -18,17 +19,13 @@ HEIGHT = 500
 # z-axis
 # what the fuck is this ordering
 
-base_options = python.BaseOptions(model_asset_path='hand_landmarker.task')
-options = vision.HandLandmarkerOptions(base_options=base_options, num_hands=1)
-detector = vision.HandLandmarker.create_from_options(options)
+camera = Camera(WIDTH, HEIGHT)
+detector = HandDetector("hand_landmarker.task")
 
-init_camera(WIDTH, HEIGHT)
-
-while camera_opened(): 
-    success, frame = get_camera_frame()
+while camera.opened(): 
+    success, frame = camera.get_frame()
     if not success: break
-    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
-    detection_result = detector.detect(mp_image)
+    detection_result = detector.relay(frame)
     if detection_result.hand_landmarks: 
         for hand_landmark in detection_result.hand_landmarks: 
             pprint.pprint(hand_landmark)
@@ -43,5 +40,5 @@ while running:
             
             
 pygame.quit()"""
-cap.release()
+camera.release()
 cv2.destroyAllWindows()
