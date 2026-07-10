@@ -37,8 +37,8 @@ while running:
     for event in pygame.event.get(): #process events since last loop cycle
         if event.type == KEYDOWN:
             running=False
-            
-            
+
 pygame.quit()"""
+
 camera.release()
 cv2.destroyAllWindows()
