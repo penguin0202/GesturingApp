@@ -8,9 +8,19 @@ from signs import *
 import numpy as np
 from camera import *
 from hand_detector import *
+import sys
 
-WIDTH = 600
-HEIGHT = 500
+CAM_WIDTH = 600
+CAM_HEIGHT = 500
+
+pygame.init()
+
+WINDOW_WIDTH = 700
+WINDOW_HEIGHT = 600
+
+screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+pygame.display.set_caption("hi this is a caption <3 niah~")
+clock = pygame.time.Clock()
 
 # run pygame window
 # input video
@@ -19,10 +29,10 @@ HEIGHT = 500
 # z-axis
 # what the fuck is this ordering
 
-camera = Camera(WIDTH, HEIGHT)
+camera = Camera(CAM_WIDTH, CAM_HEIGHT)
 detector = HandDetector("hand_landmarker.task")
 
-while camera.opened(): 
+"""while camera.opened(): 
     success, frame = camera.get_frame()
     if not success: break
     detection_result = detector.relay(frame)
@@ -30,15 +40,31 @@ while camera.opened():
         for hand_landmark in detection_result.hand_landmarks: 
             pprint.pprint(hand_landmark)
     cv2.imshow("capture image", frame)
-    if cv2.waitKey(1) == ord('q'): break
+    if cv2.waitKey(1) == ord('q'): break"""
 
-"""running=True
+running=True
 while running:
     for event in pygame.event.get(): #process events since last loop cycle
-        if event.type == KEYDOWN:
+        if event.type == pygame.QUIT:
             running=False
+    
+    success, frame = camera.get_frame()
+    if not success: 
+        print("can't get camera")
+        break
 
-pygame.quit()"""
+    detection_result = detector.relay(frame)
+    if detection_result.hand_landmarks: 
+        for hand_landmark in detection_result.hand_landmarks: 
+            pprint.pprint(hand_landmark)
+
+    camera_surface = pygame.surfarray.make_surface(frame)
+
+    screen.blit(camera_surface, (0, 0))
+    pygame.display.flip()
+
+    clock.tick(60) # some sort of fps idk
 
 camera.release()
-cv2.destroyAllWindows()
+pygame.quit()
+sys.exit()

@@ -9,8 +9,12 @@ class Camera:
         return self.cap.isOpened()
     def get_frame(self): 
         success, frame = self.cap.read()
+        # make sure compataible with pygame
         frame = cv2.flip(frame, 1)
-        if not success: return success, frame
-        return success, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # auto RGB frame conversion; byebye BGR
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        frame = cv2.flip(frame, 0)
+        #if not success: return success, frame
+        return success, frame # auto RGB frame conversion; byebye BGR
     def release(self): 
         self.cap.release()
