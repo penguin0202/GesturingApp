@@ -34,13 +34,6 @@ screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("hi this is a caption <3 niah~")
 clock = pygame.time.Clock()
 
-# run pygame window
-# input video
-# continuously get hand gestures (make functions for each)
-# draw mountains and trees based on gestures
-# z-axis
-# what the fuck is this ordering
-
 camera = Camera(CAM_WIDTH, CAM_HEIGHT)
 detector = HandDetector("hand_landmarker.task")
 
@@ -68,6 +61,7 @@ while running:
         for hand_landmark in detection_result.hand_landmarks: 
             if isOneSign(hand_landmark): 
                 drawing.spawn_tree(draw_current_x, draw_current_z)
+                print("one sign")
             elif isThumbingRightSign(hand_landmark): 
                 # have to update visual indicator too
                 draw_current_x += DRAW_X_INCREMENT_STEP
@@ -86,7 +80,7 @@ while running:
 
 
 
-            pprint.pprint(hand_landmark)
+            #pprint.pprint(hand_landmark)
 
     pygame.display.flip()
 
