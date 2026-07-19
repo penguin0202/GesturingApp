@@ -1,3 +1,27 @@
+from enum import Enum, auto
+
+class Gesture(Enum): 
+    NONE = auto()
+    CONFIRM = auto() # fist
+    YAY = auto()
+    ONE = auto()
+    PALM = auto()
+    #THREE_SIDE = auto()
+    #THREE_MIDDLE = auto()
+    #PINKY = auto()
+
+def isGesture(hand_landmark, gesture: Gesture): 
+    if gesture == Gesture.NONE: raise Exception("cannot pass NONE into this field")
+    if gesture == Gesture.YAY: #check yay
+        pass
+    if gesture == Gesture.ONE: #check one
+        pass
+    if gesture == Gesture.PALM: # check palm
+        pass
+
+
+
+
 # helper: 
 def finger_up(landmarks, tip, pip):
     return landmarks[tip].y < landmarks[pip].y
