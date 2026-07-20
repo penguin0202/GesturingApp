@@ -4,11 +4,13 @@ from mediapipe.tasks.python import vision
 import cv2
 import pygame
 import pprint
+from images import GestureImage
 from signs import *
 import numpy as np
 from camera import *
 from hand_detector import *
 import sys
+from dataclasses import dataclass
 
 DOT_COLOR = (127, 127, 127) #gray for now
 DOT_RADIUS = 2
@@ -20,28 +22,41 @@ pygame.display.set_caption("Hand Drawing App")
 clock = pygame.time.Clock()
 pygame.init()
 
-DRAWING_SURFACE_WIDTH = 600
-DRAWING_SURFACE_HEIGHT = 400
-DRAWING_START_X = DRAWING_SURFACE_WIDTH / 2
-DRAWING_START_Y = DRAWING_SURFACE_HEIGHT / 2
-DRAWING_SURFACE_PLACEMENT = (0, 0)
-DRAWING_SURFACE_BACKGROUND_COLOR = (255, 255, 255) # white
-drawing_current_x = DRAWING_START_X
-drawing_current_y = DRAWING_START_Y
-drawing_surface = pygame.Surface((DRAWING_SURFACE_WIDTH, DRAWING_SURFACE_HEIGHT))
-drawing_surface.fill(DRAWING_SURFACE_BACKGROUND_COLOR)
+canvas_gestures: list[GestureImage] = []
 
-CAMERA_SURFACE_WIDTH = 300
-CAMERA_SURFACE_HEIGHT = 200
-CAMERA_SURFACE_PLACEMENT = (DRAWING_SURFACE_WIDTH+5, 0)
+
+
+DRAWING_SURFACE_WIDTH, DRAWING_SURFACE_HEIGHT = 600, 400
+drawing_current_x = DRAWING_SURFACE_WIDTH / 2 # default/starting position
+drawing_current_y = DRAWING_SURFACE_HEIGHT / 2 # default/starting position
+drawing_surface = pygame.Surface((DRAWING_SURFACE_WIDTH, DRAWING_SURFACE_HEIGHT))
+drawing_surface.fill((255, 255, 255)) # DRAWING_SURFACE_BACKGROUND_COLOR; it's white now
+
+CAMERA_SURFACE_WIDTH, CAMERA_SURFACE_HEIGHT = 300, 200
 camera = Camera(CAMERA_SURFACE_WIDTH, CAMERA_SURFACE_HEIGHT)
+
+DRAWING_SURFACE_PLACEMENT = (0, 0)
+CAMERA_SURFACE_PLACEMENT = (DRAWING_SURFACE_WIDTH+5, 0)
 
 detector = HandDetector("hand_landmarker.task")
 current_gesture = Gesture.NONE
 
 
-drawng_anchor_position = (drawing_current_x, drawing_current_y)
+camera_gesture_anchor_x = 0
+camera_gesture_anchor_y = 0
+
+drawing_gesture_anchor_x = 0
+drawing_gesture_anchor_y = 0
+
+camera_gesture_current_x = 0
+camera_gesture_current_y = 0
+
 camera_anchor_position = None
+
+def clamp(value, min, max): 
+    if value < min: value = min
+    if value > max: value = max
+    return value
 
 running=True
 while running:
@@ -82,41 +97,54 @@ while running:
 
 
     detection_result = detector.relay(frame)
+
+
+
+
+
     if detection_result.hand_landmarks: 
         for hand_landmark in detection_result.hand_landmarks: 
             if isGesture(hand_landmark, Gesture.YAY): 
                 if current_gesture == Gesture.NONE: 
                     current_gesture = Gesture.YAY
-                    camera_anchor_position = (hand_landmark[0].x, hand_landmark[0].y)
+                    camera_gesture_anchor_x = hand_landmark[0].x
+                    camera_gesture_anchor_y = hand_landmark[0].y
+                    drawing_gesture_anchor_x = drawing_current_x
+                    drawing_gesture_anchor_y = drawing_current_y
                     # draw YAY gesture onto screen at position (drawing_current_x, y)
-                if current_gesture == Gesture.YAY: # itself
-                    pass # keep going?
-                if current_gesture == Gesture.CONFIRM: 
-                    pass # stamp image
-                else: 
-                    pass # do nothing
-            if isGesture(hand_landmark, Gesture.ONE): 
-                if current_gesture == Gesture.NONE: 
-                    pass # set current_Gesture, update visuals to show the gesture to be painted onto canvas
-                if current_gesture == Gesture.ONE: # itself
-                    pass # keep going?
-                if current_gesture == Gesture.CONFIRM: 
-                    pass # stamp image
-                else: 
-                    pass # do nothing
-            if isGesture(hand_landmark, Gesture.PALM): 
-                if current_gesture == Gesture.NONE: 
-                    pass # set current_Gesture, update visuals to show the gesture to be painted onto canvas
-                if current_gesture == Gesture.PALM: # itself
-                    pass # keep going?
-                if current_gesture == Gesture.CONFIRM: 
-                    pass # stamp image
-                else: 
-                    pass # do nothing
-            else: 
-                pass # set current_Gesture to NONE?
+                elif current_gesture == Gesture.YAY: # itself
+                    camera_gesture_current_x = hand_landmark[0].x
+                    camera_gesture_current_y = hand_landmark[0].y
 
-            #pprint.pprint(hand_landmark)
+                    # these are NORMALIZED, NOT ACTUALLY THE CAMERA GESTURE OFFSET. Because google mediapipe is a bitch (a nice bitch)
+                    camera_gesture_offset_x = camera_gesture_current_x - camera_gesture_anchor_x
+                    camera_gesture_offset_y = camera_gesture_current_y - camera_gesture_anchor_y
+
+                    # this is NOT normalized (im sorry about the naming)
+                    drawing_gesture_offset_x = camera_gesture_offset_x * DRAWING_SURFACE_WIDTH / 2
+                    drawing_gesture_offset_y = camera_gesture_offset_y * DRAWING_SURFACE_HEIGHT / 2
+
+                    drawing_current_y = drawing_gesture_anchor_x + drawing_gesture_offset_x
+                    drawing_current_x = drawing_gesture_anchor_y + drawing_gesture_offset_y
+
+                    drawing_current_x = clamp(drawing_current_x, 0, DRAWING_SURFACE_WIDTH)
+                    drawing_current_y = clamp(drawing_current_y, 0, DRAWING_SURFACE_HEIGHT)
+
+                    pass # keep going?
+                if current_gesture == Gesture.CONFIRM: # if it's not a gesture other than itself, NONE, or CONFIRM, it'll pass
+                    current_gesture = Gesture.NONE # reset current gesture to NONE, which eans the only way to get OUT of a gesture is through this CONFIRM
+                    drawing_gesture_anchor_x = drawing_current_x
+                    drawing_gesture_anchor_y = drawing_current_y
+                    # which eans the only way to get OUT of a gesture is through this CONFIRM
+                    pass # stamp image
+                else: 
+                    pass # do nothing
+            # other gestures chekc here
+            else: 
+                current_gesture = Gesture.NONE
+                drawing_gesture_anchor_x = drawing_current_x
+                drawing_gesture_anchor_y = drawing_current_y
+                pass # set current_Gesture to NONE?"""
 
     pygame.display.flip()
     clock.tick(60) # some sort of fps idk

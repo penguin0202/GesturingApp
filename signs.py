@@ -1,5 +1,12 @@
 from enum import Enum, auto
 
+class Finger(Enum): 
+    THUMB = auto()
+    INDEX = auto()
+    MIDDLE = auto()
+    RING = auto()
+    PINKY = auto()
+
 class Gesture(Enum): 
     NONE = auto()
     CONFIRM = auto() # fist
@@ -10,62 +17,70 @@ class Gesture(Enum):
     #THREE_MIDDLE = auto()
     #PINKY = auto()
 
-def isGesture(hand_landmark, gesture: Gesture): 
-    if gesture == Gesture.NONE: raise Exception("cannot pass NONE into this field")
-    if gesture == Gesture.YAY: #check yay
-        pass
-    if gesture == Gesture.ONE: #check one
-        pass
-    if gesture == Gesture.PALM: # check palm
-        pass
+def _distance(a, b):
+    return ((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2) ** 0.5
 
 
+def _cosine_between(v1, v2):
+    dot = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
+    mag1 = (v1[0] ** 2 + v1[1] ** 2 + v1[2] ** 2) ** 0.5
+    mag2 = (v2[0] ** 2 + v2[1] ** 2 + v2[2] ** 2) ** 0.5
+    if mag1 == 0 or mag2 == 0:
+        return 1.0
+    return dot / (mag1 * mag2)
 
+def finger_up(landmarks, finger: Finger):
+    if finger == Finger.THUMB:
+        tip, pip, mcp = landmarks[4], landmarks[2], landmarks[1]
+    elif finger == Finger.INDEX:
+        tip, pip, mcp = landmarks[8], landmarks[6], landmarks[5]
+    elif finger == Finger.MIDDLE:
+        tip, pip, mcp = landmarks[12], landmarks[10], landmarks[9]
+    elif finger == Finger.RING:
+        tip, pip, mcp = landmarks[16], landmarks[14], landmarks[13]
+    elif finger == Finger.PINKY:
+        tip, pip, mcp = landmarks[20], landmarks[18], landmarks[17]
+    else:
+        raise Exception("how the hell did you get here")
 
-# helper: 
-def finger_up(landmarks, tip, pip):
-    return landmarks[tip].y < landmarks[pip].y
+    tip_pip = _distance(tip, pip)
+    pip_mcp = _distance(pip, mcp)
+    tip_mcp = _distance(tip, mcp)
 
-def isStandingOnLegsSign(hand_landmark): 
-    return False
-
-def isHaltSign(hand_landmark): 
-    return False
-
-def isBackHandSign(hand_landmark): 
-    return False
-
-isOneSignAlready = False
-def isOneSign(hand_landmark): 
-    global isOneSignAlready
-    index_up = finger_up(hand_landmark, 8, 6)
-    middle_up = finger_up(hand_landmark, 12, 10)
-    ring_up = finger_up(hand_landmark, 16, 14)
-    pinky_up = finger_up(hand_landmark, 20, 18)
-
-    result = (
-        index_up
-        and middle_up
-        and not ring_up
-        and not pinky_up
-    )
-
-    if result and isOneSignAlready: return False
-    if result and not isOneSignAlready: 
-        isOneSignAlready = True
-        return True
-    if not result: 
-        isOneSignAlready = False
+    if pip_mcp < 1e-6:
         return False
 
-def isThumbingLeftSign(hand_landmark): 
-    return False
+    v1 = (pip.x - mcp.x, pip.y - mcp.y, pip.z - mcp.z)
+    v2 = (tip.x - pip.x, tip.y - pip.y, tip.z - pip.z)
+    alignment = _cosine_between(v1, v2)
 
-def isThumbingRightSign(hand_landmark): 
-    return False
+    return (
+        tip_mcp > pip_mcp
+        and tip_pip > 0.6 * pip_mcp
+        and alignment > 0.7
+    )
 
-def isThumbingUpSign(hand_landmark): 
-    return False
-
-def isThumbingDownSign(hand_landmark): 
-    return False
+def isGesture(landmarks, gesture: Gesture): 
+    if gesture == Gesture.NONE: raise Exception("cannot pass NONE into this field")
+    if gesture == Gesture.YAY: #check yay
+        return (
+            finger_up(landmarks, Finger.INDEX)
+            and finger_up(landmarks, Finger.MIDDLE)
+            and not finger_up(landmarks, Finger.RING)
+            and not finger_up(landmarks, Finger.PINKY)
+        )
+    if gesture == Gesture.ONE: #check one
+        return (
+            finger_up(landmarks, Finger.INDEX)
+            and not finger_up(landmarks, Finger.MIDDLE)
+            and not finger_up(landmarks, Finger.RING)
+            and not finger_up(landmarks, Finger.PINKY)
+        )
+    if gesture == Gesture.PALM: # check palm
+        return (
+            finger_up(landmarks, Finger.INDEX)
+            and finger_up(landmarks, Finger.MIDDLE)
+            and finger_up(landmarks, Finger.RING)
+            and finger_up(landmarks, Finger.PINKY)
+        )
+    raise Exception("what else could it be")
