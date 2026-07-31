@@ -13,14 +13,15 @@ DOT_RADIUS = 2
 
 cap = cv2.VideoCapture(0)
 
-allow_undo = True
-
 WINDOW_WIDTH = 710
 WINDOW_HEIGHT = 410
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Gesturing App")
 clock = pygame.time.Clock()
 pygame.init()
+
+colorIndex = 0
+colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255), (0, 0, 0), (255, 255, 255)]
 
 title_font = pygame.font.SysFont("Arial", 36)
 title_surface = title_font.render("Gesturing App", True, (255, 255, 255))
@@ -36,17 +37,22 @@ screen.blit(description_surface_4, (420, 125))
 description_surface_5 = description_font.render("Press 'Q' to quit gesturing", True, (200, 200, 200))
 screen.blit(description_surface_5, (420, 155))
 
+info_font = pygame.font.SysFont("Arial", 20)
+
 @dataclass
 class GestureImage():
     image: pygame.Surface
     position: Position
 
-GESTURE_IMAGE_SCALE = (100, 100)
+min_gesture_scale = 25 # step is 25
+max_gesture_scale = 125
+
+GESTURE_IMAGE_SCALE = (50, 50)
 canvas_gestures: list[GestureImage] = []
-ONEGestureImage = pygame.transform.scale(pygame.image.load("ONEGesture.png").convert_alpha(), GESTURE_IMAGE_SCALE)
-PALMGestureImage = pygame.transform.scale(pygame.image.load("PalmGesture.png").convert_alpha(), GESTURE_IMAGE_SCALE)
-YAYGestureImage = pygame.transform.scale(pygame.image.load("YayGesture.png").convert_alpha(), GESTURE_IMAGE_SCALE)
-THREEGestureImage = pygame.transform.scale(pygame.image.load("ThreeGesture.png").convert_alpha(), GESTURE_IMAGE_SCALE)
+ONEGestureImage = pygame.transform.scale(pygame.image.load("Line.png").convert_alpha(), GESTURE_IMAGE_SCALE)
+PALMGestureImage = pygame.transform.scale(pygame.image.load("Square.png").convert_alpha(), GESTURE_IMAGE_SCALE)
+YAYGestureImage = pygame.transform.scale(pygame.image.load("Triangle.png").convert_alpha(), GESTURE_IMAGE_SCALE)
+THREEGestureImage = pygame.transform.scale(pygame.image.load("Circle.png").convert_alpha(), GESTURE_IMAGE_SCALE)
 
 DRAWING_SURFACE_WIDTH, DRAWING_SURFACE_HEIGHT = 400, 400
 drawing_surface = pygame.Surface((DRAWING_SURFACE_WIDTH, DRAWING_SURFACE_HEIGHT))
@@ -64,11 +70,6 @@ drawing_gesture_previous = Position()
 camera_gesture_current = Position()
 drawing_gesture_current = Position(DRAWING_SURFACE_WIDTH / 2, DRAWING_SURFACE_HEIGHT / 2) # default/starting position
 gesture_lost = False
-
-def reset_allow_undo():
-    global allow_undo
-    allow_undo = True
-
 
 def update_active_gesture(hand_landmark):
     """Update position anchors and move the currently-active gesture image.
@@ -95,14 +96,17 @@ def update_active_gesture(hand_landmark):
         canvas_gestures[-1].position = copy(drawing_gesture_current)
 
 
-def start_gesture(gesture_enum, hand_landmark, gesture_image):
+def start_gesture(gesture_enum, hand_landmark, gesture_image: pygame.Surface):
     """Initialize a new gesture on the canvas and set anchor positions."""
     global previous_gesture, gesture_lost, camera_gesture_previous, drawing_gesture_previous, canvas_gestures
     previous_gesture = gesture_enum
     gesture_lost = False
     camera_gesture_previous = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
     drawing_gesture_previous = copy(drawing_gesture_current)
-    canvas_gestures.append(GestureImage(gesture_image, drawing_gesture_previous))
+    gestureImageColored = gesture_image.copy()
+    gestureImageColored.fill(colors[colorIndex], special_flags=pygame.BLEND_RGBA_MULT)
+    gestureImageColored = pygame.transform.scale(gestureImageColored, GESTURE_IMAGE_SCALE)
+    canvas_gestures.append(GestureImage(gestureImageColored, drawing_gesture_previous))
 
 running=True
 while running:
@@ -116,18 +120,29 @@ while running:
                 pygame.image.save(drawing_surface, "gesturing.png")
             if event.key == pygame.K_u: 
                 if previous_gesture == Gesture.NONE: 
-                    if canvas_gestures and allow_undo: 
-                        allow_undo = False
+                    if canvas_gestures: 
                         canvas_gestures.pop(-1) # remove last gesture image
-                        timer = threading.Timer(0.5, reset_allow_undo) # wait 0.5 seconds before allowing another gesture to be recognized
-                        timer.start()
             if event.key == pygame.K_c:
                 if canvas_gestures:
                     drawing_gesture_current = Position(DRAWING_SURFACE_WIDTH / 2, DRAWING_SURFACE_HEIGHT / 2)
                     drawing_gesture_previous = copy(drawing_gesture_current)
                     camera_gesture_previous = copy(camera_gesture_current)
                     canvas_gestures[-1].position = copy(drawing_gesture_current)
+            if event.key == pygame.K_LEFT:
+                if colorIndex - 1 < 0: colorIndex = len(colors) - 1
+                else: colorIndex -= 1
+            if event.key == pygame.K_RIGHT:
+                if colorIndex + 1 >= len(colors): colorIndex = 0
+                else: colorIndex += 1
+            if event.key == pygame.K_UP:
+                GESTURE_IMAGE_SCALE = (GESTURE_IMAGE_SCALE[0] + 25, GESTURE_IMAGE_SCALE[1] + 25)
+                if GESTURE_IMAGE_SCALE[0] > max_gesture_scale: GESTURE_IMAGE_SCALE = (max_gesture_scale, max_gesture_scale)
+            if event.key == pygame.K_DOWN:
+                GESTURE_IMAGE_SCALE = (GESTURE_IMAGE_SCALE[0] - 25, GESTURE_IMAGE_SCALE[1] - 25)
+                if GESTURE_IMAGE_SCALE[0] < min_gesture_scale: GESTURE_IMAGE_SCALE = (min_gesture_scale, min_gesture_scale)
+
     
+
     success, frame = cap.read()
     if not success: 
         print("can't get camera")
@@ -150,6 +165,14 @@ while running:
     pygame.draw.rect(drawing_surface, (218, 165, 32), (0, 0, DRAWING_SURFACE_WIDTH, DRAWING_SURFACE_HEIGHT), width=10) # fill drawing surface with white
     for gesture_image in canvas_gestures:
         drawing_surface.blit(gesture_image.image, gesture_image.position.tuple())
+
+    scale_surface = info_font.render(f"Scale: {GESTURE_IMAGE_SCALE[0]}", True, (255, 255, 255))
+    screen.blit(scale_surface, (450, 10))
+
+    color_chooser = THREEGestureImage.copy()
+    color_chooser.fill(colors[colorIndex], special_flags=pygame.BLEND_RGBA_MULT)
+    color_chooser = pygame.transform.scale(color_chooser, (25, 25))
+    screen.blit(color_chooser, (680, 10))
 
     if detection_result.hand_landmarks: 
         for hand_landmark in detection_result.hand_landmarks: 
