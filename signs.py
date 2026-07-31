@@ -13,13 +13,14 @@ class Gesture(Enum):
     YAY = auto()
     ONE = auto()
     PALM = auto()
+    THREE = auto()
+    PINKY = auto()
     #THREE_SIDE = auto()
     #THREE_MIDDLE = auto()
     #PINKY = auto()
 
 def _distance(a, b):
     return ((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2) ** 0.5
-
 
 def _cosine_between(v1, v2):
     dot = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
@@ -79,6 +80,20 @@ def isGesture(landmarks, gesture: Gesture):
     if gesture == Gesture.PALM: # check palm
         return (
             finger_up(landmarks, Finger.INDEX)
+            and finger_up(landmarks, Finger.MIDDLE)
+            and finger_up(landmarks, Finger.RING)
+            and finger_up(landmarks, Finger.PINKY)
+        )
+    if gesture == Gesture.CONFIRM: # check confirm
+        return (
+            not finger_up(landmarks, Finger.INDEX)
+            and not finger_up(landmarks, Finger.MIDDLE)
+            and not finger_up(landmarks, Finger.RING)
+            and not finger_up(landmarks, Finger.PINKY)
+        )
+    if gesture == Gesture.THREE: # check three
+        return (
+            not finger_up(landmarks, Finger.INDEX)
             and finger_up(landmarks, Finger.MIDDLE)
             and finger_up(landmarks, Finger.RING)
             and finger_up(landmarks, Finger.PINKY)
