@@ -69,6 +69,41 @@ def reset_allow_undo():
     global allow_undo
     allow_undo = True
 
+
+def update_active_gesture(hand_landmark):
+    """Update position anchors and move the currently-active gesture image.
+
+    This consolidates the repeated code used by YAY, PALM, THREE, and ONE.
+    """
+    global gesture_lost, camera_gesture_previous, drawing_gesture_previous, camera_gesture_current, drawing_gesture_current, canvas_gestures
+    if gesture_lost:
+        gesture_lost = False
+        camera_gesture_previous = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
+        drawing_gesture_previous = copy(drawing_gesture_current)
+
+    camera_gesture_current = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
+    camera_gesture_offset = camera_gesture_current - camera_gesture_previous
+
+    drawing_gesture_offset = Position(
+        camera_gesture_offset.x / CAMERA_SURFACE_WIDTH * DRAWING_SURFACE_WIDTH,
+        camera_gesture_offset.y / CAMERA_SURFACE_HEIGHT * DRAWING_SURFACE_HEIGHT,
+    )
+
+    drawing_gesture_current = (drawing_gesture_previous + drawing_gesture_offset).clamp(0, DRAWING_SURFACE_WIDTH, 0, DRAWING_SURFACE_HEIGHT)
+
+    if canvas_gestures:
+        canvas_gestures[-1].position = copy(drawing_gesture_current)
+
+
+def start_gesture(gesture_enum, hand_landmark, gesture_image):
+    """Initialize a new gesture on the canvas and set anchor positions."""
+    global previous_gesture, gesture_lost, camera_gesture_previous, drawing_gesture_previous, canvas_gestures
+    previous_gesture = gesture_enum
+    gesture_lost = False
+    camera_gesture_previous = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
+    drawing_gesture_previous = copy(drawing_gesture_current)
+    canvas_gestures.append(GestureImage(gesture_image, drawing_gesture_previous))
+
 running=True
 while running:
     for event in pygame.event.get(): #process events since last loop cycle
@@ -127,91 +162,27 @@ while running:
 
             if isGesture(hand_landmark, Gesture.YAY): 
                 if previous_gesture == Gesture.NONE: 
-                    previous_gesture = Gesture.YAY
-                    gesture_lost = False
-                    camera_gesture_previous = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
-                    drawing_gesture_previous = copy(drawing_gesture_current)
-                    canvas_gestures.append(GestureImage(YAYGestureImage, drawing_gesture_previous))
+                    start_gesture(Gesture.YAY, hand_landmark, YAYGestureImage)
                 elif previous_gesture == Gesture.YAY: # itself
-                    if gesture_lost:
-                        gesture_lost = False
-                        camera_gesture_previous = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
-                        drawing_gesture_previous = copy(drawing_gesture_current)
-
-                    camera_gesture_current = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
-                    camera_gesture_offset = camera_gesture_current - camera_gesture_previous
-
-                    drawing_gesture_offset = Position(camera_gesture_offset.x / CAMERA_SURFACE_WIDTH * DRAWING_SURFACE_WIDTH, camera_gesture_offset.y / CAMERA_SURFACE_HEIGHT * DRAWING_SURFACE_HEIGHT)
-
-                    drawing_gesture_current = (drawing_gesture_previous + drawing_gesture_offset).clamp(0, DRAWING_SURFACE_WIDTH, 0, DRAWING_SURFACE_HEIGHT)
-
-                    canvas_gestures[-1].position = copy(drawing_gesture_current)
+                    update_active_gesture(hand_landmark)
 
             if isGesture(hand_landmark, Gesture.PALM):
                 if previous_gesture == Gesture.NONE: 
-                    previous_gesture = Gesture.PALM
-                    gesture_lost = False
-                    camera_gesture_previous = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
-                    drawing_gesture_previous = copy(drawing_gesture_current)
-                    canvas_gestures.append(GestureImage(PALMGestureImage, drawing_gesture_previous))
+                    start_gesture(Gesture.PALM, hand_landmark, PALMGestureImage)
                 elif previous_gesture == Gesture.PALM: # itself
-                    if gesture_lost:
-                        gesture_lost = False
-                        camera_gesture_previous = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
-                        drawing_gesture_previous = copy(drawing_gesture_current)
-
-                    camera_gesture_current = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
-                    camera_gesture_offset = camera_gesture_current - camera_gesture_previous
-
-                    drawing_gesture_offset = Position(camera_gesture_offset.x / CAMERA_SURFACE_WIDTH * DRAWING_SURFACE_WIDTH, camera_gesture_offset.y / CAMERA_SURFACE_HEIGHT * DRAWING_SURFACE_HEIGHT)
-
-                    drawing_gesture_current = (drawing_gesture_previous + drawing_gesture_offset).clamp(0, DRAWING_SURFACE_WIDTH, 0, DRAWING_SURFACE_HEIGHT)
-
-                    canvas_gestures[-1].position = copy(drawing_gesture_current)
+                    update_active_gesture(hand_landmark)
 
             if isGesture(hand_landmark, Gesture.THREE): 
                 if previous_gesture == Gesture.NONE: 
-                    previous_gesture = Gesture.THREE
-                    gesture_lost = False
-                    camera_gesture_previous = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
-                    drawing_gesture_previous = copy(drawing_gesture_current)
-                    canvas_gestures.append(GestureImage(THREEGestureImage, drawing_gesture_previous))
+                    start_gesture(Gesture.THREE, hand_landmark, THREEGestureImage)
                 elif previous_gesture == Gesture.THREE: # itself
-                    if gesture_lost:
-                        gesture_lost = False
-                        camera_gesture_previous = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
-                        drawing_gesture_previous = copy(drawing_gesture_current)
-
-                    camera_gesture_current = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
-                    camera_gesture_offset = camera_gesture_current - camera_gesture_previous
-
-                    drawing_gesture_offset = Position(camera_gesture_offset.x / CAMERA_SURFACE_WIDTH * DRAWING_SURFACE_WIDTH, camera_gesture_offset.y / CAMERA_SURFACE_HEIGHT * DRAWING_SURFACE_HEIGHT)
-
-                    drawing_gesture_current = (drawing_gesture_previous + drawing_gesture_offset).clamp(0, DRAWING_SURFACE_WIDTH, 0, DRAWING_SURFACE_HEIGHT)
-
-                    canvas_gestures[-1].position = copy(drawing_gesture_current)
+                    update_active_gesture(hand_landmark)
 
             if isGesture(hand_landmark, Gesture.ONE):
                 if previous_gesture == Gesture.NONE: 
-                    previous_gesture = Gesture.ONE
-                    gesture_lost = False
-                    camera_gesture_previous = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
-                    drawing_gesture_previous = copy(drawing_gesture_current)
-                    canvas_gestures.append(GestureImage(ONEGestureImage, drawing_gesture_previous))
+                    start_gesture(Gesture.ONE, hand_landmark, ONEGestureImage)
                 elif previous_gesture == Gesture.ONE: # itself
-                    if gesture_lost:
-                        gesture_lost = False
-                        camera_gesture_previous = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
-                        drawing_gesture_previous = copy(drawing_gesture_current)
-
-                    camera_gesture_current = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
-                    camera_gesture_offset = camera_gesture_current - camera_gesture_previous
-
-                    drawing_gesture_offset = Position(camera_gesture_offset.x / CAMERA_SURFACE_WIDTH * DRAWING_SURFACE_WIDTH, camera_gesture_offset.y / CAMERA_SURFACE_HEIGHT * DRAWING_SURFACE_HEIGHT)
-
-                    drawing_gesture_current = (drawing_gesture_previous + drawing_gesture_offset).clamp(0, DRAWING_SURFACE_WIDTH, 0, DRAWING_SURFACE_HEIGHT)
-
-                    canvas_gestures[-1].position = copy(drawing_gesture_current)
+                    update_active_gesture(hand_landmark)
 
     pygame.display.flip()
     clock.tick(60) # some sort of fps idk
@@ -243,3 +214,22 @@ pygame.quit()
             # unsure about visual indicator
             draw_current_z -= DRAW_Z_INCREMENT_STEP
             if draw_current_z < DRAW_START_Z: draw_current_z = DRAW_START_Z"""
+
+"""if gesture_lost:
+                        gesture_lost = False
+                        camera_gesture_previous = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
+                        drawing_gesture_previous = copy(drawing_gesture_current)
+
+                    camera_gesture_current = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
+                    camera_gesture_offset = camera_gesture_current - camera_gesture_previous
+
+                    drawing_gesture_offset = Position(camera_gesture_offset.x / CAMERA_SURFACE_WIDTH * DRAWING_SURFACE_WIDTH, camera_gesture_offset.y / CAMERA_SURFACE_HEIGHT * DRAWING_SURFACE_HEIGHT)
+
+                    drawing_gesture_current = (drawing_gesture_previous + drawing_gesture_offset).clamp(0, DRAWING_SURFACE_WIDTH, 0, DRAWING_SURFACE_HEIGHT)
+
+                    canvas_gestures[-1].position = copy(drawing_gesture_current)"""
+"""previous_gesture = Gesture.PALM
+                    gesture_lost = False
+                    camera_gesture_previous = Position(hand_landmark[0].x * CAMERA_SURFACE_WIDTH, hand_landmark[0].y * CAMERA_SURFACE_HEIGHT)
+                    drawing_gesture_previous = copy(drawing_gesture_current)
+                    canvas_gestures.append(GestureImage(PALMGestureImage, drawing_gesture_previous))"""
