@@ -6,6 +6,7 @@ from hand_detector import *
 from dataclasses import dataclass
 from position import Position
 from copy import copy
+from datetime import datetime
 
 DOT_COLOR = (127, 127, 127) #gray for now
 DOT_RADIUS = 2
@@ -20,23 +21,33 @@ clock = pygame.time.Clock()
 pygame.init()
 
 colorIndex = 0
-colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255), (0, 0, 0), (255, 255, 255)]
+colors = [
+    (255, 182, 193),  # light pink
+    (255, 0, 0),      # red
+    (255, 165, 0),    # orange
+    (255, 255, 0),    # yellow
+    (0, 255, 0),      # green
+    (0, 128, 0),      # dark green
+    (0, 255, 255),    # cyan
+    (0, 0, 255),      # blue
+    (128, 0, 128),    # purple
+    (139, 69, 19),    # dark brown
+    (0, 0, 0),        # black
+    (255, 255, 255),  # white
+]
 
 title_font = pygame.font.SysFont("Arial", 36)
-
-
-description_font = pygame.font.SysFont("Arial", 18)
-
-
-info_font = pygame.font.SysFont("Arial", 20)
+description_font = pygame.font.SysFont("Arial", 12)
+info_font = pygame.font.SysFont("Arial", 14)
+small_font = pygame.font.SysFont("Arial", 10, bold=True, italic=True)
 
 @dataclass
 class GestureImage():
     image: pygame.Surface
     position: Position
 
-min_gesture_scale = 25 # step is 25
-max_gesture_scale = 125
+min_gesture_scale = 10 # step is 25
+max_gesture_scale = 150
 
 GESTURE_IMAGE_SCALE = (50, 50)
 canvas_gestures: list[GestureImage] = []
@@ -44,6 +55,17 @@ ONEGestureImage = pygame.transform.scale(pygame.image.load("Line.png").convert_a
 PALMGestureImage = pygame.transform.scale(pygame.image.load("Square.png").convert_alpha(), GESTURE_IMAGE_SCALE)
 YAYGestureImage = pygame.transform.scale(pygame.image.load("Triangle.png").convert_alpha(), GESTURE_IMAGE_SCALE)
 THREEGestureImage = pygame.transform.scale(pygame.image.load("Circle.png").convert_alpha(), GESTURE_IMAGE_SCALE)
+PINKYGestureImage = pygame.transform.scale(pygame.image.load("_Line.png").convert_alpha(), GESTURE_IMAGE_SCALE)
+ROCKGestureImage = pygame.transform.scale(pygame.image.load("_Triangle.png").convert_alpha(), GESTURE_IMAGE_SCALE)
+
+EMPTY_SKIN_IMAGE = pygame.transform.scale(pygame.image.load("EMPTYSKIN.png").convert_alpha(), (50, 50))
+NOTHING_GESTURE_SKIN_IMAGE = pygame.transform.scale(pygame.image.load("NOTHINGGESTURESKIN.png").convert_alpha(), (50, 50))
+YAY_GESTURE_SKIN_IMAGE = pygame.transform.scale(pygame.image.load("YAYGESTURESKIN.png").convert_alpha(), (50, 50))
+PALM_GESTURE_SKIN_IMAGE = pygame.transform.scale(pygame.image.load("PALMGESTURESKIN.png").convert_alpha(), (50, 50))
+THREE_GESTURE_SKIN_IMAGE = pygame.transform.scale(pygame.image.load("THREEGESTURESKIN.png").convert_alpha(), (50, 50))
+ONE_GESTURE_SKIN_IMAGE = pygame.transform.scale(pygame.image.load("ONEGESTURESKIN.png").convert_alpha(), (50, 50))
+PINKY_GESTURE_SKIN_IMAGE = pygame.transform.scale(pygame.image.load("PINKYGESTURESKIN.png").convert_alpha(), (50, 50))
+ROCK_GESTURE_SKIN_IMAGE = pygame.transform.scale(pygame.image.load("ROCKGESTURESKIN.png").convert_alpha(), (50, 50))
 
 DRAWING_SURFACE_WIDTH, DRAWING_SURFACE_HEIGHT = 400, 400
 drawing_surface = pygame.Surface((DRAWING_SURFACE_WIDTH, DRAWING_SURFACE_HEIGHT))
@@ -107,9 +129,8 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_q:
                 running=False
-
             if event.key == pygame.K_s:
-                pygame.image.save(drawing_surface, "gesturing.png")
+                pygame.image.save(drawing_surface, f"gesturing_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png")
             if event.key == pygame.K_u: 
                 if previous_gesture == Gesture.NONE: 
                     if canvas_gestures: 
@@ -127,10 +148,10 @@ while running:
                 if colorIndex + 1 >= len(colors): colorIndex = 0
                 else: colorIndex += 1
             if event.key == pygame.K_UP:
-                GESTURE_IMAGE_SCALE = (GESTURE_IMAGE_SCALE[0] + 25, GESTURE_IMAGE_SCALE[1] + 25)
+                GESTURE_IMAGE_SCALE = (GESTURE_IMAGE_SCALE[0] + 10, GESTURE_IMAGE_SCALE[1] + 10)
                 if GESTURE_IMAGE_SCALE[0] > max_gesture_scale: GESTURE_IMAGE_SCALE = (max_gesture_scale, max_gesture_scale)
             if event.key == pygame.K_DOWN:
-                GESTURE_IMAGE_SCALE = (GESTURE_IMAGE_SCALE[0] - 25, GESTURE_IMAGE_SCALE[1] - 25)
+                GESTURE_IMAGE_SCALE = (GESTURE_IMAGE_SCALE[0] - 10, GESTURE_IMAGE_SCALE[1] - 10)
                 if GESTURE_IMAGE_SCALE[0] < min_gesture_scale: GESTURE_IMAGE_SCALE = (min_gesture_scale, min_gesture_scale)
 
     screen.fill((0, 0, 0)) # clear screen
@@ -138,18 +159,25 @@ while running:
     title_surface = title_font.render("Gesturing App", True, (255, 255, 255))
     screen.blit(title_surface, (420, 10))
 
-    description_surface_1 = description_font.render("Press 'S' to save your gesturing", True, (200, 200, 200))
-    screen.blit(description_surface_1, (500, 65))
-    description_surface_3 = description_font.render("Press 'U' to undo last gesture", True, (200, 200, 200))
-    screen.blit(description_surface_3, (500, 85))
-    description_surface_4 = description_font.render("Press 'C' to center gestures", True, (200, 200, 200))
-    screen.blit(description_surface_4, (500, 105))
-    description_surface_5 = description_font.render("Press 'Q' to quit gesturing", True, (200, 200, 200))
-    screen.blit(description_surface_5, (500, 125))
-    description_surface_5 = description_font.render("Press 'Horizontal Arrows' to cycle colors", True, (200, 200, 200))
-    screen.blit(description_surface_5, (420, 145))
-    description_surface_5 = description_font.render("Press 'Vertical Arrows' to change scales", True, (200, 200, 200))
-    screen.blit(description_surface_5, (420, 165))
+    description_surface_1 = description_font.render("Press 'S' to save your gesturing", True, ( 255, 255,  255))
+    screen.blit(description_surface_1, (500, 55))
+    description_surface_3 = description_font.render("Press 'U' to undo last gesture", True, ( 255, 255,  255))
+    screen.blit(description_surface_3, (500, 70))
+    description_surface_4 = description_font.render("Press 'C' to center gestures", True, ( 255, 255,  255))
+    screen.blit(description_surface_4, (500, 85))
+    description_surface_5 = description_font.render("Press 'Q' to quit gesturing", True, ( 255, 255,  255))
+    screen.blit(description_surface_5, (500, 100))
+    description_surface_5 = description_font.render("Press 'Horizontal Arrows' to cycle colors", True, ( 255, 255,  255))
+    screen.blit(description_surface_5, (420, 115))
+    description_surface_5 = description_font.render("Press 'Vertical Arrows' to change scales", True, ( 255, 255,  255))
+    screen.blit(description_surface_5, (420, 130))
+
+    gesture_explaning_surface_1 = small_font.render("THREE (alternate): Circle; PEACE: Triangle; PINKY: Horizontal Line", True, (232, 190, 172))
+    screen.blit(gesture_explaning_surface_1, (420, 150))
+    gesture_explaning_surface_2 = small_font.render("ROCK: Upside-Down Triangle; OPEN-HAND: Square; ONE: Vertical Line", True, (232, 190, 172))
+    screen.blit(gesture_explaning_surface_2, (420, 165))
+    gesture_explaning_surface_3 = small_font.render("FIST to Confirm Placement", True, (232, 190, 172))
+    screen.blit(gesture_explaning_surface_3, (420, 180))
 
     success, frame = cap.read()
     if not success: 
@@ -175,12 +203,12 @@ while running:
         drawing_surface.blit(gesture_image.image, gesture_image.position.tuple())
 
     scale_surface = info_font.render(f"{GESTURE_IMAGE_SCALE[0]}x", True, (255, 255, 255))
-    screen.blit(scale_surface, (440, 70))
+    screen.blit(scale_surface, (420, 52))
 
     color_chooser = THREEGestureImage.copy()
     color_chooser.fill(colors[colorIndex], special_flags=pygame.BLEND_RGBA_MULT)
-    color_chooser = pygame.transform.scale(color_chooser, (25, 25))
-    screen.blit(color_chooser, (440, 110))
+    color_chooser = pygame.transform.scale(color_chooser, (50, 50))
+    screen.blit(color_chooser, (440, 58))
 
     if detection_result.hand_landmarks: 
         for hand_landmark in detection_result.hand_landmarks: 
@@ -215,17 +243,36 @@ while running:
                 elif previous_gesture == Gesture.ONE: # itself
                     update_active_gesture(hand_landmark)
 
-    if previous_gesture == Gesture.NONE or previous_gesture == Gesture.CONFIRM:
-        screen.blit(pygame.transform.scale(pygame.image.load("NOTHINGGESTURESKIN.png").convert_alpha(), (50, 50)), (640, 10))
-    if previous_gesture == Gesture.YAY:
-        screen.blit(pygame.transform.scale(pygame.image.load("YAYGESTURESKIN.png").convert_alpha(), (50, 50)), (640, 10))
-    if previous_gesture == Gesture.PALM:
-        screen.blit(pygame.transform.scale(pygame.image.load("PALMGESTURESKIN.png").convert_alpha(), (50, 50)), (640, 10))
-    if previous_gesture == Gesture.THREE:
-        screen.blit(pygame.transform.scale(pygame.image.load("THREEGESTURESKIN.png").convert_alpha(), (50, 50)), (640, 10))
-    if previous_gesture == Gesture.ONE:
-        screen.blit(pygame.transform.scale(pygame.image.load("ONEGESTURESKIN.png").convert_alpha(), (50, 50)), (640, 10))
+            if isGesture(hand_landmark, Gesture.PINKY):
+                if previous_gesture == Gesture.NONE: 
+                    start_gesture(Gesture.PINKY, hand_landmark, PINKYGestureImage)
+                elif previous_gesture == Gesture.PINKY: # itself
+                    update_active_gesture(hand_landmark)
 
+            if isGesture(hand_landmark, Gesture.ROCK):
+                if previous_gesture == Gesture.NONE: 
+                    start_gesture(Gesture.ROCK, hand_landmark, ROCKGestureImage)
+                elif previous_gesture == Gesture.ROCK: # itself
+                    update_active_gesture(hand_landmark)
+
+    if previous_gesture == Gesture.NONE:
+        screen.blit(EMPTY_SKIN_IMAGE, (640, 10))
+    if previous_gesture == Gesture.CONFIRM:
+        screen.blit(NOTHING_GESTURE_SKIN_IMAGE, (640, 10))
+    if previous_gesture == Gesture.YAY:
+        screen.blit(YAY_GESTURE_SKIN_IMAGE, (640, 10))
+    if previous_gesture == Gesture.PALM:
+        screen.blit(PALM_GESTURE_SKIN_IMAGE, (640, 10))
+    if previous_gesture == Gesture.THREE:
+        screen.blit(THREE_GESTURE_SKIN_IMAGE, (640, 10))
+    if previous_gesture == Gesture.ONE:
+        screen.blit(ONE_GESTURE_SKIN_IMAGE, (640, 10))
+    if previous_gesture == Gesture.PINKY:
+        screen.blit(PINKY_GESTURE_SKIN_IMAGE, (640, 10))
+    if previous_gesture == Gesture.ROCK:
+        screen.blit(ROCK_GESTURE_SKIN_IMAGE, (640, 10))
+
+    
     pygame.draw.rect(drawing_surface, (218, 165, 32), (0, 0, DRAWING_SURFACE_WIDTH, DRAWING_SURFACE_HEIGHT), width=10) # fill drawing
 
     pygame.display.flip()

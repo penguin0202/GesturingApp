@@ -15,6 +15,7 @@ class Gesture(Enum):
     PALM = auto()
     THREE = auto()
     PINKY = auto()
+    ROCK = auto()
     #THREE_SIDE = auto()
     #THREE_MIDDLE = auto()
     #PINKY = auto()
@@ -96,6 +97,20 @@ def isGesture(landmarks, gesture: Gesture):
             not finger_up(landmarks, Finger.INDEX)
             and finger_up(landmarks, Finger.MIDDLE)
             and finger_up(landmarks, Finger.RING)
+            and finger_up(landmarks, Finger.PINKY)
+        )
+    if gesture == Gesture.PINKY: # check pinky
+        return (
+            not finger_up(landmarks, Finger.INDEX)
+            and not finger_up(landmarks, Finger.MIDDLE)
+            and not finger_up(landmarks, Finger.RING)
+            and finger_up(landmarks, Finger.PINKY)
+        )
+    if gesture == Gesture.ROCK: # check rock
+        return (
+            finger_up(landmarks, Finger.INDEX)
+            and not finger_up(landmarks, Finger.MIDDLE)
+            and not finger_up(landmarks, Finger.RING)
             and finger_up(landmarks, Finger.PINKY)
         )
     raise Exception("what else could it be")
