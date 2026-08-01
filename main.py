@@ -160,7 +160,7 @@ while running:
     screen.blit(title_surface, (420, 10))
 
     description_surface_1 = description_font.render("Press 'S' to save your gesturing", True, ( 255, 255,  255))
-    screen.blit(description_surface_1, (500, 55))
+    screen.blit(description_surface_1, (500, 55)) 
     description_surface_3 = description_font.render("Press 'U' to undo last gesture", True, ( 255, 255,  255))
     screen.blit(description_surface_3, (500, 70))
     description_surface_4 = description_font.render("Press 'C' to center gestures", True, ( 255, 255,  255))
