@@ -1,1 +1,1 @@
-# Perlin-Noise-App
+# previously known as "Hands and Mountains"
